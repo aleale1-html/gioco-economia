@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <title>Imprenditore per un Giorno</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f4f4f4;
+        }
+        .game-container {
+            background-color: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .section {
+            margin-bottom: 20px;
+        }
+        .btn {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        #scenari-mercato, #risultati, #classifica, #multiplayer {
+            display: none;
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #f9f9f9;
+            border-radius: 5px;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.4);
+        }
+        .modal-content {
+            background-color: #fefefe;
+            margin: 15% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <h1>Imprenditore per un Giorno</h1>
+        
+        <!-- Form iniziale (invariato) -->
+        <div class="section" id="settore-aziendale">
+            <h2>Scegli il Settore Aziendale</h2>
+            <select id="settore">
+                <option value="">Seleziona un settore</option>
+                <option value="agricolo">Agricolo</option>
+                <option value="industriale">Industriale</option>
+                <option value="commerciale">Commerciale</option>
+                <option value="servizi">Servizi</option>
+            </select>
+        </div>
+
+        <!-- Altre sezioni precedenti -->
+
+        <div class="section" id="modalita-gioco">
+            <h2>Modalità di Gioco</h2>
+            <button class="btn" onclick="avviaModalitaSingolo()">Modalità Singolo</button>
+            <button class="btn" onclick="avviaModalitaMultiplayer()">Modalità Multiplayer</button>
+        </div>
+
+        <!-- Nuove sezioni -->
+        <div id="scenari-mercato">
+            <h2>Scenari di Mercato</h2>
+            <div id="scenario-corrente"></div>
+            <div id="opzioni-scenario"></div>
+        </div>
+
+        <div id="risultati">
+            <h2>Risultati Aziendali</h2>
+            <div id="punteggio-finale"></div>
+            <div id="valutazione-performance"></div>
+            <button class="btn" onclick="salvaRisultato()">Salva Risultato</button>
+        </div>
+
+        <div id="classifica">
+            <h2>Classifica Migliori Imprenditori</h2>
+            <table id="tabella-classifiche">
+                <thead>
+                    <tr>
+                        <th>Posizione</th>
+                        <th>Nome</th>
+                        <th>Punteggio</th>
+                    </tr>
+                </thead>
+                <tbody id="corpo-classifica"></tbody>
+            </table>
+        </div>
+
+        <div id="multiplayer">
+            <h2>Sfida Multiplayer</h2>
+            <input type="text" id="nome-giocatore" placeholder="Inserisci il tuo nome">
+            <div id="lista-sfide"></div>
+        </div>
+    </div>
+
+    <!-- Modal per registrazione risultati -->
+    <div id="modal-salvataggio" class="modal">
+        <div class="modal-content">
+            <h2>Salva il tuo Risultato</h2>
+            <input type="text" id="nome-salvataggio" placeholder="Inserisci il tuo nome">
+            <button onclick="confermaRisultato()">Conferma</button>
+        </div>
+    </div>
+
+    <script>
+        // Oggetto di gioco con nuove funzionalità
+        const gioco = {
+            // Oggetto precedente + nuove funzionalità
+            classifiche: [],
+            sfideMultiplayer: [],
+
+            // Funzione per salvare i risultati
+            salvaRisultato() {
+                const modal = document.getElementById('modal-salvataggio');
+                modal.style.display = 'block';
+            },
+
+            // Conferma salvataggio risultato
+            confermaRisultato(nome) {
+                const risultato = {
+                    nome: nome || 'Anonimo',
+                    punteggio: this.punteggio,
+                    data: new Date().toLocaleDateString()
+                };
+
+                // Salvataggio in localStorage
+                let classifiche = JSON.parse(localStorage.getItem('classifiche') || '[]');
+                classifiche.push(risultato);
+                
+                // Ordina e limita a top 10
+                classifiche.sort((a, b) => b.punteggio - a.punteggio);
+                classifiche = classifiche.slice(0, 10);
+
+                localStorage.setItem('classifiche', JSON.stringify(classifiche));
+                
+                this.mostraClassifiche();
+            },
+
+            // Mostra classifiche
+            mostraClassifiche() {
+                const corpoClassifica = document.getElementById('corpo-classifica');
+                const classifiche = JSON.parse(localStorage.getItem('classifiche') || '[]');
+
+                corpoClassifica.innerHTML = classifiche.map((risultato, index) => `
+                    <tr>
+                        <td>${index + 1}</td>
+                        <td>${risultato.nome}</td>
+                        <td>${risultato.punteggio}</td>
+                    </tr>
+                `).join('');
+
+                document.getElementById('classifica').style.display = 'block';
+            },
+
+            // Modalità multiplayer
+            generaSfidaMultiplayer() {
+                // Logica per generare sfide tra giocatori
+                const sfida = {
+                    id: Date.now(),
+                    giocatori: [],
+                    stato: 'aperta'
+                };
+
+                this.sfideMultiplayer.push(sfida);
+                this.aggiornaListaSfide();
+            },
+
+            aggiornaListaSfide() {
+                const listaSfide = document.getElementById('lista-sfide');
+                listaSfide.innerHTML = this.sfideMultiplayer.map(sfida => `
+                    <div>
+                        Sfida #${sfida.id} - 
+                        Giocatori: ${sfida.giocatori.length} 
+                        <button onclick="gioco.unisciSfida(${sfida.id})">Unisciti</button>
+                    </div>
+                `).join('');
+            },
+
+            unisciSfida(idSfida) {
+                const nomeGiocatore = document.getElementById('nome-giocatore').value;
+                const sfida = this.sfideMultiplayer.find(s => s.id === idSfida);
+                
+                if (sfida && sfida.giocatori.length < 4) {
+                    sfida.giocatori.push({
+                        nome: nomeGiocatore,
+                        punteggio: 0
+                    });
+
+                    if (sfida.giocatori.length === 4) {
+                        sfida.stato = 'in corso';
+                    }
+
+                    this.aggiornaListaSfide();
+                }
+            }
+        };
+
+        // Funzioni di avvio
+        function avviaModalitaSingolo() {
+            document.getElementById('modalita-gioco').style.display = 'none';
+            avviaGioco();
+        }
+
+        function avviaModalitaMultiplayer() {
+            document.getElementById('multiplayer').style.display = 'block';
+            gioco.generaSfidaMultiplayer();
+        }
+
+        function salvaRisultato() {
+            gioco.salvaRisultato();
+        }
+
+        function confermaRisultato() {
+            const nome = document.getElementById('nome-salvataggio').value;
+            gioco.confermaRisultato(nome);
+            document.getElementById('modal-salvataggio').style.display = 'none';
+        }
+
+        // Funzioni precedenti invariate
+        function avviaGioco() {
+            gioco.punteggio = gioco.calcolaPunteggio();
+            gioco.generaScenario();
+        }
+
+        // Carica classifiche all'avvio
+        document.addEventListener('DOMContentLoaded', () => {
+            gioco.mostraClassifiche();
+        });
+    </script>
+</body>
+</html>
